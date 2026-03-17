@@ -351,4 +351,188 @@
         
         // 放入資料與畫面
         l2Answers[bpIdx][slotIdx] = selectedPartBtn.part;
-        slotEl.innerText = selected
+        slotEl.innerText = selectedPartBtn.part;
+        
+        // 隱藏下方按鈕並清空選擇狀態
+        selectedPartBtn.btn.classList.add('used');
+        selectedPartBtn.btn.classList.remove('selected');
+        selectedPartBtn = null;
+
+        // 視覺標示正在使用的藍圖
+        document.querySelectorAll('.blueprint-wrapper').forEach(w => w.classList.remove('active-bp'));
+        slotEl.closest('.blueprint-wrapper').classList.add('active-bp');
+    }
+
+    function checkLevel2() {
+        // 找出玩家填了哪個藍圖
+        let filledBpIdx = -1;
+        for(let i in l2Answers) {
+            if(l2Answers[i].length > 0) filledBpIdx = i;
+        }
+        
+        if(filledBpIdx === -1 || l2Answers[filledBpIdx].filter(Boolean).length < currentQ.parts.length) {
+            return showMessage('請將所有部件放入同一個結構中！', false);
+        }
+
+        // 檢查該藍圖的 grid class 是否正確
+        const activeWrapper = document.querySelectorAll('.blueprint-wrapper')[filledBpIdx];
+        const isGridCorrect = activeWrapper.querySelector('.bp-grid').classList.contains(currentQ.correctGrid);
+        
+        // 檢查順序是否正確
+        let isOrderCorrect = true;
+        for(let i=0; i<currentQ.answerSlots.length; i++) {
+            if(l2Answers[filledBpIdx][i] !== currentQ.answerSlots[i]) isOrderCorrect = false;
+        }
+
+        if(isGridCorrect && isOrderCorrect) {
+            coins += 2;
+            progress += 1;
+            showMessage('結構與位置完全正確！金幣 +2', true);
+            checkLevelUp();
+        } else {
+            coins = Math.max(0, coins - 1);
+            updateStats();
+            showMessage('哎呀，結構或位置錯了！金幣 -1', false);
+            setTimeout(loadQuestion, 2000);
+        }
+    }
+
+    // ========== 高級邏輯 ==========
+    let l3TempAnswers = [];
+    
+    function renderLevel3Phase1(ws, pool) {
+        l3TempAnswers = [];
+        const slotsDiv = document.createElement('div');
+        slotsDiv.className = 'l1-slots';
+        for(let i=0; i<currentQ.parts.length; i++) {
+            slotsDiv.innerHTML += `<div class="l1-slot" id="l3-s${i}"></div>`;
+        }
+        ws.appendChild(slotsDiv);
+
+        const poolDiv = document.createElement('div');
+        poolDiv.className = 'parts-pool';
+        pool.forEach(part => {
+            const btn = document.createElement('button');
+            btn.className = 'part-btn';
+            btn.innerText = part;
+            btn.onclick = () => {
+                if(l3TempAnswers.length < currentQ.parts.length) {
+                    l3TempAnswers.push(part);
+                    document.getElementById(`l3-s${l3TempAnswers.length-1}`).innerText = part;
+                    btn.classList.add('used');
+                }
+            };
+            poolDiv.appendChild(btn);
+        });
+        ws.appendChild(poolDiv);
+        
+        const resetBtn = document.createElement('button');
+        resetBtn.innerText = '重置選擇';
+        resetBtn.style.marginTop = '10px';
+        resetBtn.onclick = () => loadQuestion();
+        ws.appendChild(resetBtn);
+    }
+
+    function renderLevel3Phase2() {
+        const ws = document.getElementById('workspace');
+        ws.innerHTML = '';
+        
+        document.getElementById('hint-pinyin').innerText = '組詞挑戰！';
+        document.getElementById('hint-english').innerText = `請選擇正確的字與「${currentQ.char}」組成詞語`;
+
+        const wordArea = document.createElement('div');
+        wordArea.className = 'l3-word-area';
+        
+        // 判斷目標字在詞語的哪個位置
+        if(currentQ.wordParts[0] === currentQ.char) {
+            wordArea.innerHTML = `<span>${currentQ.char}</span><div class="word-slot" id="target-slot">?</div>`;
+        } else {
+            wordArea.innerHTML = `<div class="word-slot" id="target-slot">?</div><span>${currentQ.char}</span>`;
+        }
+        ws.appendChild(wordArea);
+
+        const poolDiv = document.createElement('div');
+        poolDiv.className = 'parts-pool';
+        let options = shuffle([...currentQ.options]);
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'part-btn';
+            btn.innerText = opt;
+            btn.onclick = () => {
+                document.getElementById('target-slot').innerText = opt;
+                l3TempAnswers = [opt]; // 暫存選定的字
+            };
+            poolDiv.appendChild(btn);
+        });
+        ws.appendChild(poolDiv);
+        
+        document.getElementById('main-btn').innerText = '確認組詞';
+    }
+
+    function checkLevel3() {
+        if(l3Phase === 1) {
+            if(l3TempAnswers.length < currentQ.parts.length) return showMessage('請選滿部件！', false);
+            const isCorrect = currentQ.parts.every(p => l3TempAnswers.includes(p));
+            if(isCorrect) {
+                coins += 2;
+                updateStats();
+                showMessage('拼字正確！獲得 2 金幣。進入組詞...', true);
+                l3Phase = 2;
+                setTimeout(renderLevel3Phase2, 1500);
+            } else {
+                coins = Math.max(0, coins - 2);
+                updateStats();
+                showMessage('拼字錯誤！金幣 -2', false);
+                setTimeout(loadQuestion, 1500);
+            }
+        } else {
+            // Phase 2 組詞檢查
+            if(l3TempAnswers.length === 0) return showMessage('請選擇一個字！', false);
+            
+            const selectedChar = l3TempAnswers[0];
+            const correctOtherChar = currentQ.wordParts[0] === currentQ.char ? currentQ.wordParts[1] : currentQ.wordParts[0];
+            
+            if(selectedChar === correctOtherChar) {
+                coins += 3; // 連擊加成
+                progress += 1;
+                showMessage('完美通關！金幣 +3 (總計+5)', true);
+                checkLevelUp();
+            } else {
+                showMessage('組詞錯誤，不扣分。下次加油！', false);
+                setTimeout(() => { checkLevelUp(true); }, 2000); // 失敗但也進入下一題
+            }
+        }
+    }
+
+    // ========== 流程控制 ==========
+    function checkAnswer() {
+        if(level === 1) checkLevel1();
+        else if(level === 2) checkLevel2();
+        else if(level === 3) checkLevel3();
+    }
+
+    function checkLevelUp(forceNext = false) {
+        updateStats();
+        if(progress >= 5) {
+            if(level < 3) {
+                level++;
+                progress = 0;
+                qIndex = 0;
+                alert(`恭喜晉級到 ${['初級', '中級', '高級'][level-1]}！`);
+                loadQuestion();
+            } else {
+                alert(`太厲害了！你完成了所有挑戰，總共獲得了 ${coins} 枚金幣！`);
+                initGame();
+            }
+        } else {
+            qIndex++;
+            setTimeout(loadQuestion, 1500);
+        }
+    }
+
+    // 啟動遊戲
+    initGame();
+</script>
+
+</body>
+</html>
