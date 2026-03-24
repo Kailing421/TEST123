@@ -75,7 +75,6 @@
         }
         .action-btn:hover { background: #357ABD; }
 
-        /* 初級樣式 */
         .l1-slots { display: flex; gap: 15px; margin-bottom: 20px; }
         .l1-slot {
             width: 65px; height: 65px; border: 2px dashed #aaa;
@@ -83,7 +82,6 @@
             justify-content: center; font-size: 2.2rem; background: #fafafa;
         }
 
-        /* 結構網格樣式 (中高級) */
         .blueprints-container { display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; }
         .blueprint-wrapper {
             border: 2px solid #ddd; padding: 10px; border-radius: 10px; cursor: pointer; background: white;
@@ -98,7 +96,6 @@
         }
         .bp-slot.active-slot { border: 2px solid var(--primary); background: #fff; }
 
-        /* 嚴格鎖死的格線座標 (防跑版) */
         .grid-lr { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
         .grid-tb { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
         .grid-lmr { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr; }
@@ -180,7 +177,7 @@
         }
     }
 
-    // --- 題庫資料 ---
+    // --- 題庫資料 (已修正透明度低的部件) ---
     const qLevel1 = [
         { char: '明', p: 'míng', e: 'bright', parts: ['日','月'], fake: ['目','白'] },
         { char: '媽', p: 'mā', e: 'mother', parts: ['女','馬'], fake: ['子','牛'] },
@@ -193,7 +190,8 @@
         { char: '陪', p: 'péi', e: 'to accompany', parts: ['阝','立','口'], grid: 'grid-l-tr-br', fakeGrid: 'grid-tl-bl-r' },
         { char: '部', p: 'bù', e: 'part / section', parts: ['立','口','阝'], grid: 'grid-tl-bl-r', fakeGrid: 'grid-l-tr-br' },
         { char: '謝', p: 'xiè', e: 'to thank', parts: ['言','身','寸'], grid: 'grid-lmr', fakeGrid: 'grid-tb' },
-        { char: '班', p: 'bān', e: 'class', parts: ['王','刀','王'], grid: 'grid-lmr', fakeGrid: 'grid-tlr-b' },
+        // 替換「班」為「做」，視覺完全透明且同樣為左中右結構
+        { char: '做', p: 'zuò', e: 'to do', parts: ['亻','古','攵'], grid: 'grid-lmr', fakeGrid: 'grid-tlr-b' }, 
         { char: '想', p: 'xiǎng', e: 'to think', parts: ['木','目','心'], grid: 'grid-tlr-b', fakeGrid: 'grid-l-tr-br' }
     ];
 
@@ -216,13 +214,14 @@
                 '文': { p: 'yǔwén', e: 'language and literature' }
             }
         },
+        // 替換「電」為「晚」，視覺更透明，符合 A1-A2 實用標準
         { 
-            char: '電', p: 'diàn', e: 'electricity', 
-            parts: ['雨','申'], grid: 'grid-tb', fakeGrid: 'grid-lr', fakeParts: ['日'],
-            acceptables: ['腦', '視'], options: ['腦','視','水','火'],
+            char: '晚', p: 'wǎn', e: 'evening / late', 
+            parts: ['日','免'], grid: 'grid-lr', fakeGrid: 'grid-tb', fakeParts: ['月'],
+            acceptables: ['上', '安'], options: ['上','安','早','天'],
             meanings: {
-                '腦': { p: 'diànnǎo', e: 'computer' },
-                '視': { p: 'diànshì', e: 'television' }
+                '上': { p: 'wǎnshàng', e: 'evening' },
+                '安': { p: 'wǎn\'ān', e: 'good night' }
             }
         },
         { 
@@ -284,7 +283,6 @@
         document.getElementById('main-btn').style.display = 'block';
         document.getElementById('main-btn').innerText = '確認答案';
         
-        // 恢復提示區的預設樣式
         const hintBox = document.getElementById('hint-box');
         hintBox.classList.remove('success-highlight');
         document.getElementById('hint-pinyin').innerText = currentQ.p;
@@ -456,7 +454,6 @@
             if(currentQ.acceptables.includes(selectedWord)) {
                 coins += 3; progress += 1; 
                 
-                // 動態更新上方的提示區為完整的詞彙與英文
                 const wordInfo = currentQ.meanings[selectedWord];
                 document.getElementById('hint-pinyin').innerText = wordInfo.p;
                 document.getElementById('hint-english').innerText = wordInfo.e;
@@ -464,7 +461,6 @@
                 
                 showMessage(`答對了！金幣 +3`, true);
                 qIdx++; 
-                // 延長換題時間至 2.5 秒，讓學生看清楚英文
                 setTimeout(checkLevelUp, 2500); 
             } else {
                 showMessage('組詞錯誤，不扣分。換下一題！', false);
