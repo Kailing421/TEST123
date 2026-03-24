@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>漢字拼圖大師</title>
+    <title>字魂工坊：漢字部件大師</title>
     <style>
         :root {
             --primary: #4A90E2;
@@ -39,10 +39,7 @@
             padding-bottom: 10px;
             margin-bottom: 20px;
         }
-        .stats {
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
+        .stats { font-size: 1.1rem; font-weight: bold; }
         .gold-icon { color: var(--gold); }
         .hint-box {
             text-align: center;
@@ -51,64 +48,74 @@
             background: #E8F2FC;
             border-radius: 10px;
         }
-        .pinyin { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
+        .pinyin { font-size: 1.8rem; font-weight: bold; color: var(--primary); }
         .english { font-size: 1rem; color: #666; }
         
         /* 遊戲區域共用 */
-        .workspace { min-height: 200px; display: flex; flex-direction: column; align-items: center; }
+        .workspace { min-height: 220px; display: flex; flex-direction: column; align-items: center; }
         .parts-pool { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
         .part-btn {
             font-size: 1.8rem; padding: 10px 20px; background: white;
             border: 2px solid #ccc; border-radius: 8px; cursor: pointer;
-            transition: 0.2s;
+            transition: 0.2s; min-width: 60px; text-align: center;
         }
-        .part-btn.selected { border-color: var(--primary); background: #E8F2FC; transform: scale(1.1); }
+        .part-btn.selected { border-color: var(--primary); background: #E8F2FC; transform: scale(1.1); box-shadow: 0 4px 8px rgba(74,144,226,0.3); }
         .part-btn.used { visibility: hidden; }
         
         .action-btn {
             margin-top: 20px; padding: 12px 30px; font-size: 1.2rem;
             background: var(--primary); color: white; border: none;
-            border-radius: 25px; cursor: pointer; width: 100%;
+            border-radius: 25px; cursor: pointer; width: 100%; font-weight: bold;
         }
-        .action-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .action-btn:hover { background: #357ABD; }
 
         /* 初級樣式 */
         .l1-slots { display: flex; gap: 15px; margin-bottom: 20px; }
         .l1-slot {
-            width: 60px; height: 60px; border: 2px dashed #aaa;
+            width: 65px; height: 65px; border: 2px dashed #aaa;
             border-radius: 10px; display: flex; align-items: center;
-            justify-content: center; font-size: 2rem;
+            justify-content: center; font-size: 2rem; background: #fafafa;
         }
 
-        /* 中級結構樣式 */
+        /* 結構網格樣式 (中、高級共用) */
         .blueprints-container { display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; }
         .blueprint-wrapper {
-            border: 2px solid #ddd; padding: 10px; border-radius: 10px; cursor: pointer;
+            border: 2px solid #ddd; padding: 10px; border-radius: 10px; cursor: pointer; background: white;
+            transition: 0.2s;
         }
-        .blueprint-wrapper.active-bp { border-color: var(--primary); background: #f9f9f9; }
-        .bp-grid { display: grid; gap: 5px; width: 100px; height: 100px; }
+        .blueprint-wrapper.active-bp { border-color: var(--primary); box-shadow: 0 0 10px rgba(74,144,226,0.2); }
+        
+        /* 定義各種漢字結構網格 */
+        .bp-grid { display: grid; gap: 4px; width: 110px; height: 110px; }
         .bp-slot {
-            background: #eee; border: 1px dashed #999; display: flex;
-            align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer;
+            background: #f5f5f5; border: 1px dashed #999; display: flex;
+            align-items: center; justify-content: center; font-size: 1.6rem; cursor: pointer;
+            min-height: 0; min-width: 0; overflow: hidden;
         }
         .bp-slot.active-slot { border: 2px solid var(--primary); background: #fff; }
-        
-        /* 中級網格定義 */
-        .grid-lr { grid-template-columns: 1fr 1fr; }
-        .grid-tb { grid-template-rows: 1fr 1fr; }
-        .grid-lmr { grid-template-columns: 1fr 1fr 1fr; }
+
+        /* 左中右 (謝、班) */
+        .grid-lmr { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr; }
+        /* 左-右上右下 (陪) */
         .grid-l-tr-br { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
-        .grid-l-tr-br .slot-0 { grid-row: 1 / 3; } /* 左邊佔兩列 */
+        .grid-l-tr-br .slot-0 { grid-row: 1 / 3; }
+        /* 左上左下-右 (部) */
         .grid-tl-bl-r { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
-        .grid-tl-bl-r .slot-2 { grid-row: 1 / 3; grid-column: 2; } /* 右邊佔兩列 */
+        .grid-tl-bl-r .slot-2 { grid-row: 1 / 3; grid-column: 2; }
+        /* 上左右-下全寬 (想) */
+        .grid-tlr-b { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .grid-tlr-b .slot-2 { grid-column: 1 / 3; }
+        /* 上下 (學) */
+        .grid-tb { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
 
-        /* 高級樣式 */
-        .l3-word-area { display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 20px 0; gap: 10px;}
-        .word-slot { border-bottom: 3px solid #333; min-width: 50px; text-align: center; color: var(--primary); }
+        /* 高級組詞樣式 */
+        .l3-word-area { display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 20px 0; gap: 10px;}
+        .word-slot { border-bottom: 4px solid var(--primary); min-width: 60px; text-align: center; color: var(--primary); padding-bottom: 5px;}
 
-        #message { text-align: center; font-weight: bold; margin-top: 15px; min-height: 24px; }
+        #message { text-align: center; font-weight: bold; margin-top: 15px; min-height: 24px; font-size: 1.1rem;}
         .correct-text { color: var(--success); }
         .wrong-text { color: var(--danger); }
+        .info-text { font-size: 0.9rem; color: #888; margin-bottom: 15px;}
     </style>
 </head>
 <body>
@@ -133,47 +140,75 @@
 </div>
 
 <script>
+    // --- 音效系統 (Web Audio API) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+
+    function playSound(type) {
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        if (type === 'success') {
+            // 答對：清脆的雙音升調
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        } else {
+            // 答錯：低沉提示音
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+    }
+
     // --- 題庫資料區 ---
     const qLevel1 = [
         { char: '明', p: 'míng', e: 'bright', parts: ['日','月'], fake: ['目','白'] },
         { char: '媽', p: 'mā', e: 'mother', parts: ['女','馬'], fake: ['子','牛'] },
         { char: '休', p: 'xiū', e: 'to rest', parts: ['亻','木'], fake: ['彳','本'] },
         { char: '好', p: 'hǎo', e: 'good', parts: ['女','子'], fake: ['母','小'] },
-        { char: '林', p: 'lín', e: 'woods', parts: ['木','木'], fake: ['本','才'] },
-        { char: '胖', p: 'pàng', e: 'fat', parts: ['月','半'], fake: ['日','平'] },
-        { char: '吧', p: 'ba', e: '(particle)', parts: ['口','巴'], fake: ['日','己'] },
-        { char: '哪', p: 'nǎ', e: 'which', parts: ['口','那'], fake: ['日','月'] },
-        { char: '忙', p: 'máng', e: 'busy', parts: ['忄','亡'], fake: ['心','方'] },
-        { char: '朋', p: 'péng', e: 'friend', parts: ['月','月'], fake: ['日','目'] }
+        { char: '林', p: 'lín', e: 'woods', parts: ['木','木'], fake: ['本','才'] }
     ];
 
     const qLevel2 = [
-        // grid 類型對應 CSS class。 answerSlots 代表正確部件在陣列中的排序
         { char: '陪', p: 'péi', e: 'to accompany', parts: ['阝','立','口'], correctGrid: 'grid-l-tr-br', answerSlots: ['阝','立','口'], fakeGrids: ['grid-tl-bl-r'] },
         { char: '部', p: 'bù', e: 'part / section', parts: ['立','口','阝'], correctGrid: 'grid-tl-bl-r', answerSlots: ['立','口','阝'], fakeGrids: ['grid-l-tr-br'] },
         { char: '謝', p: 'xiè', e: 'to thank', parts: ['言','身','寸'], correctGrid: 'grid-lmr', answerSlots: ['言','身','寸'], fakeGrids: ['grid-tb'] },
-        { char: '樹', p: 'shù', e: 'tree', parts: ['木','吉','寸'], correctGrid: 'grid-lmr', answerSlots: ['木','吉','寸'], fakeGrids: ['grid-l-tr-br'] },
-        { char: '想', p: 'xiǎng', e: 'to think', parts: ['木','目','心'], correctGrid: 'grid-tl-bl-r', answerSlots: ['木','目','心'], fakeGrids: ['grid-l-tr-br'] },
-        { char: '意', p: 'yì', e: 'meaning', parts: ['立','日','心'], correctGrid: 'grid-tb', answerSlots: ['立','日','心'], fakeGrids: ['grid-lmr'] }, // 這裡的上下結構我簡化成3格垂直(共用TB，稍作變通)
-        { char: '腳', p: 'jiǎo', e: 'foot', parts: ['月','谷','卩'], correctGrid: 'grid-lmr', answerSlots: ['月','谷','卩'], fakeGrids: ['grid-l-tr-br'] },
-        { char: '做', p: 'zuò', e: 'to do', parts: ['亻','古','攵'], correctGrid: 'grid-lmr', answerSlots: ['亻','古','攵'], fakeGrids: ['grid-tl-bl-r'] },
-        { char: '班', p: 'bān', e: 'class', parts: ['王','刀','王'], correctGrid: 'grid-lmr', answerSlots: ['王','刀','王'], fakeGrids: ['grid-l-tr-br'] },
-        { char: '街', p: 'jiē', e: 'street', parts: ['彳','圭','亍'], correctGrid: 'grid-lmr', answerSlots: ['彳','圭','亍'], fakeGrids: ['grid-tb'] }
+        { char: '班', p: 'bān', e: 'class', parts: ['王','刀','王'], correctGrid: 'grid-lmr', answerSlots: ['王','刀','王'], fakeGrids: ['grid-tlr-b'] },
+        { char: '想', p: 'xiǎng', e: 'to think', parts: ['木','目','心'], correctGrid: 'grid-tlr-b', answerSlots: ['木','目','心'], fakeGrids: ['grid-l-tr-br'] }
     ];
-    // 修正「意」的結構顯示，為求簡單，我們這裡題庫資料稍微調整讓它可以適配
-    qLevel2[5].correctGrid = 'grid-tb'; qLevel2[5].parts = ['音', '心']; qLevel2[5].answerSlots = ['音', '心'];
 
     const qLevel3 = [
-        { char: '學', p: 'xué', e: 'to study', parts: ['⺍','冖','子'], fakeParts: ['木'], word: '學生', wordParts: ['學','生'], options: ['校','生','吃','天'] },
-        { char: '校', p: 'xiào', e: 'school', parts: ['木','交'], fakeParts: ['氵'], word: '學校', wordParts: ['學','校'], options: ['學','生','書','電'] },
-        { char: '歡', p: 'huān', e: 'joyous', parts: ['雚','欠'], fakeParts: ['口'], word: '喜歡', wordParts: ['喜','歡'], options: ['喜','迎','看','見'] },
-        { char: '迎', p: 'yíng', e: 'to welcome', parts: ['卬','辶'], fakeParts: ['彳'], word: '歡迎', wordParts: ['歡','迎'], options: ['歡','送','來','去'] },
-        { char: '視', p: 'shì', e: 'to look at', parts: ['礻','見'], fakeParts: ['衤'], word: '電視', wordParts: ['電','視'], options: ['電','影','腦','車'] },
-        { char: '影', p: 'yǐng', e: 'shadow / movie', parts: ['日','京','彡'], fakeParts: ['月'], word: '電影', wordParts: ['電','影'], options: ['電','視','星','歌'] },
-        { char: '腦', p: 'nǎo', e: 'brain', parts: ['月','巛','𡳾'], fakeParts: ['日'], word: '電腦', wordParts: ['電','腦'], options: ['電','豬','頭','手'] },
-        { char: '師', p: 'shī', e: 'teacher', parts: ['𠂤','帀'], fakeParts: ['巾'], word: '老師', wordParts: ['老','師'], options: ['老','大','生','長'] },
-        { char: '醫', p: 'yī', e: 'doctor/medicine', parts: ['匚','矢','殳','酉'], fakeParts: ['口'], word: '醫生', wordParts: ['醫','生'], options: ['生','院','學','校'] },
-        { char: '院', p: 'yuàn', e: 'courtyard/institution', parts: ['阝','完'], fakeParts: ['卩'], word: '醫院', wordParts: ['醫','院'], options: ['醫','學','校','生'] }
+        { 
+            char: '學', p: 'xué', e: 'to study', 
+            parts: ['𦥯','子'], correctGrid: 'grid-tb', answerSlots: ['𦥯','子'], fakeGrids: ['grid-lmr'], fakeParts: ['木'],
+            acceptables: ['生', '校'], // 學生、學校 都對
+            options: ['校','生','吃','天'] 
+        },
+        { 
+            char: '醫', p: 'yī', e: 'doctor / medicine', 
+            parts: ['殹','酉'], correctGrid: 'grid-tb', answerSlots: ['殹','酉'], fakeGrids: ['grid-l-tr-br'], fakeParts: ['口'],
+            acceptables: ['生', '院'], // 醫生、醫院 都對
+            options: ['生','院','學','校'] 
+        },
+        { 
+            char: '語', p: 'yǔ', e: 'language / words', 
+            parts: ['言','吾'], correctGrid: 'grid-l-tr-br', answerSlots: ['言','五','口'], fakeGrids: ['grid-tb'], fakeParts: ['彳'],
+            acceptables: ['言', '文'], // 語言、語文 都對
+            options: ['言','文','看','見'] 
+        }
     ];
 
     // --- 遊戲狀態 ---
@@ -182,12 +217,11 @@
     let progress = 0;
     let currentQ = null;
     let qIndex = 0;
-    let l3Phase = 1; // 1: 拼字, 2: 組詞
+    let l3Phase = 1;
 
-    // --- 互動狀態 ---
     let selectedPartBtn = null; 
     let l1Answers = [];
-    let l2Answers = {}; // { blueprintId: { slotIndex: partText } }
+    let bpAnswers = {}; 
 
     function shuffle(array) {
         return array.sort(() => Math.random() - 0.5);
@@ -209,6 +243,7 @@
         const msgEl = document.getElementById('message');
         msgEl.innerText = text;
         msgEl.className = isSuccess ? 'correct-text' : 'wrong-text';
+        playSound(isSuccess ? 'success' : 'error');
         setTimeout(() => msgEl.innerText = '', 2500);
     }
 
@@ -226,12 +261,12 @@
         } else if (level === 2) {
             currentQ = qLevel2[qIndex % qLevel2.length];
             pool = shuffle([...currentQ.parts]);
-            renderLevel2(ws, pool);
+            renderBlueprints(ws, pool, currentQ);
         } else if (level === 3) {
             currentQ = qLevel3[qIndex % qLevel3.length];
             l3Phase = 1;
             pool = shuffle([...currentQ.parts, ...currentQ.fakeParts]);
-            renderLevel3Phase1(ws, pool);
+            renderBlueprints(ws, pool, currentQ);
         }
         
         document.getElementById('hint-pinyin').innerText = currentQ.p;
@@ -241,6 +276,11 @@
     // ========== 初級邏輯 ==========
     function renderLevel1(ws, pool) {
         l1Answers = [];
+        
+        const info = document.createElement('div');
+        info.className = 'info-text'; info.innerText = '💡 請點選兩個部件組成漢字';
+        ws.appendChild(info);
+
         const slotsDiv = document.createElement('div');
         slotsDiv.className = 'l1-slots';
         slotsDiv.innerHTML = `<div class="l1-slot" id="l1-s0"></div><div class="l1-slot" id="l1-s1"></div>`;
@@ -265,19 +305,17 @@
 
         const resetBtn = document.createElement('button');
         resetBtn.innerText = '重置選擇';
-        resetBtn.style.marginTop = '10px';
+        resetBtn.style.marginTop = '15px';
         resetBtn.onclick = () => loadQuestion();
         ws.appendChild(resetBtn);
     }
 
     function checkLevel1() {
         if(l1Answers.length < 2) return showMessage('請選滿兩個部件！', false);
-        // 只要選的部件陣列跟答案陣列內容一樣（不論順序，因為是點擊組合）
         const isCorrect = currentQ.parts.every(p => l1Answers.includes(p));
         
         if(isCorrect) {
-            coins += 1;
-            progress += 1;
+            coins += 1; progress += 1;
             showMessage('答對了！金幣 +1', true);
             checkLevelUp();
         } else {
@@ -286,31 +324,35 @@
         }
     }
 
-    // ========== 中級邏輯 ==========
-    function renderLevel2(ws, pool) {
-        l2Answers = {};
+    // ========== 結構藍圖邏輯 (中級 & 高級第一階段共用) ==========
+    function renderBlueprints(ws, pool, qData) {
+        bpAnswers = {};
         selectedPartBtn = null;
 
         const info = document.createElement('div');
-        info.innerText = '💡 先點擊下方部件，再點擊上方的藍圖空格放入';
-        info.style.marginBottom = '15px'; info.style.color = '#666';
+        info.className = 'info-text';
+        info.innerText = '💡 先點擊下方部件，再點擊上方的結構格子放入';
         ws.appendChild(info);
 
         const bpsDiv = document.createElement('div');
         bpsDiv.className = 'blueprints-container';
         
-        // 準備藍圖：1個正確的，1個假的
-        let grids = shuffle([currentQ.correctGrid, currentQ.fakeGrids[0]]);
+        let grids = shuffle([qData.correctGrid, qData.fakeGrids[0]]);
         
         grids.forEach((gridClass, bpIdx) => {
-            l2Answers[bpIdx] = [];
+            bpAnswers[bpIdx] = [];
             const bpWrap = document.createElement('div');
             bpWrap.className = 'blueprint-wrapper';
             
             const gridDiv = document.createElement('div');
             gridDiv.className = `bp-grid ${gridClass}`;
             
-            for(let i=0; i<currentQ.parts.length; i++) {
+            // 根據網格決定格子數量
+            let slotCount = gridClass === 'grid-lmr' ? 3 : (gridClass === 'grid-tb' ? 2 : 3);
+            if(qData.char === '語' && gridClass === 'grid-l-tr-br') slotCount = 3;
+            if(qData.char === '學' && gridClass === 'grid-tb') slotCount = 2;
+            
+            for(let i=0; i<slotCount; i++) {
                 const slot = document.createElement('div');
                 slot.className = `bp-slot slot-${i}`;
                 slot.onclick = () => handleSlotClick(bpIdx, i, slot);
@@ -327,100 +369,10 @@
             const btn = document.createElement('button');
             btn.className = 'part-btn';
             btn.innerText = part;
-            btn.id = `part-btn-${i}`;
-            btn.onclick = () => handlePartClick(btn, part);
-            poolDiv.appendChild(btn);
-        });
-        ws.appendChild(poolDiv);
-        
-        const resetBtn = document.createElement('button');
-        resetBtn.innerText = '重置選擇';
-        resetBtn.style.marginTop = '10px';
-        resetBtn.onclick = () => loadQuestion();
-        ws.appendChild(resetBtn);
-    }
-
-    function handlePartClick(btn, part) {
-        document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        selectedPartBtn = { btn, part };
-    }
-
-    function handleSlotClick(bpIdx, slotIdx, slotEl) {
-        if (!selectedPartBtn) return; // 沒選部件不能放
-        
-        // 放入資料與畫面
-        l2Answers[bpIdx][slotIdx] = selectedPartBtn.part;
-        slotEl.innerText = selectedPartBtn.part;
-        
-        // 隱藏下方按鈕並清空選擇狀態
-        selectedPartBtn.btn.classList.add('used');
-        selectedPartBtn.btn.classList.remove('selected');
-        selectedPartBtn = null;
-
-        // 視覺標示正在使用的藍圖
-        document.querySelectorAll('.blueprint-wrapper').forEach(w => w.classList.remove('active-bp'));
-        slotEl.closest('.blueprint-wrapper').classList.add('active-bp');
-    }
-
-    function checkLevel2() {
-        // 找出玩家填了哪個藍圖
-        let filledBpIdx = -1;
-        for(let i in l2Answers) {
-            if(l2Answers[i].length > 0) filledBpIdx = i;
-        }
-        
-        if(filledBpIdx === -1 || l2Answers[filledBpIdx].filter(Boolean).length < currentQ.parts.length) {
-            return showMessage('請將所有部件放入同一個結構中！', false);
-        }
-
-        // 檢查該藍圖的 grid class 是否正確
-        const activeWrapper = document.querySelectorAll('.blueprint-wrapper')[filledBpIdx];
-        const isGridCorrect = activeWrapper.querySelector('.bp-grid').classList.contains(currentQ.correctGrid);
-        
-        // 檢查順序是否正確
-        let isOrderCorrect = true;
-        for(let i=0; i<currentQ.answerSlots.length; i++) {
-            if(l2Answers[filledBpIdx][i] !== currentQ.answerSlots[i]) isOrderCorrect = false;
-        }
-
-        if(isGridCorrect && isOrderCorrect) {
-            coins += 2;
-            progress += 1;
-            showMessage('結構與位置完全正確！金幣 +2', true);
-            checkLevelUp();
-        } else {
-            coins = Math.max(0, coins - 1);
-            updateStats();
-            showMessage('哎呀，結構或位置錯了！金幣 -1', false);
-            setTimeout(loadQuestion, 2000);
-        }
-    }
-
-    // ========== 高級邏輯 ==========
-    let l3TempAnswers = [];
-    
-    function renderLevel3Phase1(ws, pool) {
-        l3TempAnswers = [];
-        const slotsDiv = document.createElement('div');
-        slotsDiv.className = 'l1-slots';
-        for(let i=0; i<currentQ.parts.length; i++) {
-            slotsDiv.innerHTML += `<div class="l1-slot" id="l3-s${i}"></div>`;
-        }
-        ws.appendChild(slotsDiv);
-
-        const poolDiv = document.createElement('div');
-        poolDiv.className = 'parts-pool';
-        pool.forEach(part => {
-            const btn = document.createElement('button');
-            btn.className = 'part-btn';
-            btn.innerText = part;
             btn.onclick = () => {
-                if(l3TempAnswers.length < currentQ.parts.length) {
-                    l3TempAnswers.push(part);
-                    document.getElementById(`l3-s${l3TempAnswers.length-1}`).innerText = part;
-                    btn.classList.add('used');
-                }
+                document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedPartBtn = { btn, part };
             };
             poolDiv.appendChild(btn);
         });
@@ -428,27 +380,77 @@
         
         const resetBtn = document.createElement('button');
         resetBtn.innerText = '重置選擇';
-        resetBtn.style.marginTop = '10px';
+        resetBtn.style.marginTop = '15px';
         resetBtn.onclick = () => loadQuestion();
         ws.appendChild(resetBtn);
     }
 
+    function handleSlotClick(bpIdx, slotIdx, slotEl) {
+        if (!selectedPartBtn) return;
+        bpAnswers[bpIdx][slotIdx] = selectedPartBtn.part;
+        slotEl.innerText = selectedPartBtn.part;
+        
+        selectedPartBtn.btn.classList.add('used');
+        selectedPartBtn.btn.classList.remove('selected');
+        selectedPartBtn = null;
+
+        document.querySelectorAll('.blueprint-wrapper').forEach(w => w.classList.remove('active-bp'));
+        slotEl.closest('.blueprint-wrapper').classList.add('active-bp');
+    }
+
+    function checkBlueprints() {
+        let filledBpIdx = -1;
+        for(let i in bpAnswers) {
+            if(bpAnswers[i].length > 0) filledBpIdx = i;
+        }
+        
+        if(filledBpIdx === -1 || bpAnswers[filledBpIdx].filter(Boolean).length < currentQ.answerSlots.length) {
+            return showMessage('請將正確數量的部件放入同一個結構中！', false);
+        }
+
+        const activeWrapper = document.querySelectorAll('.blueprint-wrapper')[filledBpIdx];
+        const isGridCorrect = activeWrapper.querySelector('.bp-grid').classList.contains(currentQ.correctGrid);
+        
+        let isOrderCorrect = true;
+        for(let i=0; i<currentQ.answerSlots.length; i++) {
+            if(bpAnswers[filledBpIdx][i] !== currentQ.answerSlots[i]) isOrderCorrect = false;
+        }
+
+        if(isGridCorrect && isOrderCorrect) {
+            if(level === 2) {
+                coins += 2; progress += 1;
+                showMessage('結構完全正確！金幣 +2', true);
+                checkLevelUp();
+            } else if (level === 3) {
+                coins += 2; updateStats();
+                showMessage('拼字正確！獲得 2 金幣。進入組詞...', true);
+                l3Phase = 2;
+                setTimeout(renderLevel3Phase2, 1500);
+            }
+        } else {
+            coins = Math.max(0, coins - (level===2 ? 1 : 2));
+            updateStats();
+            showMessage('結構或位置錯了！扣除金幣', false);
+            setTimeout(loadQuestion, 2000);
+        }
+    }
+
+    // ========== 高級階段二 (組詞) ==========
+    let selectedWord = "";
+    
     function renderLevel3Phase2() {
         const ws = document.getElementById('workspace');
         ws.innerHTML = '';
+        selectedWord = "";
         
         document.getElementById('hint-pinyin').innerText = '組詞挑戰！';
-        document.getElementById('hint-english').innerText = `請選擇正確的字與「${currentQ.char}」組成詞語`;
+        document.getElementById('hint-english').innerText = `請選擇能與「${currentQ.char}」組成詞語的字`;
 
         const wordArea = document.createElement('div');
         wordArea.className = 'l3-word-area';
         
-        // 判斷目標字在詞語的哪個位置
-        if(currentQ.wordParts[0] === currentQ.char) {
-            wordArea.innerHTML = `<span>${currentQ.char}</span><div class="word-slot" id="target-slot">?</div>`;
-        } else {
-            wordArea.innerHTML = `<div class="word-slot" id="target-slot">?</div><span>${currentQ.char}</span>`;
-        }
+        // 此處預設目標字在前面 (例如: 學生)
+        wordArea.innerHTML = `<span>${currentQ.char}</span><div class="word-slot" id="target-slot">?</div>`;
         ws.appendChild(wordArea);
 
         const poolDiv = document.createElement('div');
@@ -460,7 +462,7 @@
             btn.innerText = opt;
             btn.onclick = () => {
                 document.getElementById('target-slot').innerText = opt;
-                l3TempAnswers = [opt]; // 暫存選定的字
+                selectedWord = opt;
             };
             poolDiv.appendChild(btn);
         });
@@ -469,55 +471,38 @@
         document.getElementById('main-btn').innerText = '確認組詞';
     }
 
-    function checkLevel3() {
-        if(l3Phase === 1) {
-            if(l3TempAnswers.length < currentQ.parts.length) return showMessage('請選滿部件！', false);
-            const isCorrect = currentQ.parts.every(p => l3TempAnswers.includes(p));
-            if(isCorrect) {
-                coins += 2;
-                updateStats();
-                showMessage('拼字正確！獲得 2 金幣。進入組詞...', true);
-                l3Phase = 2;
-                setTimeout(renderLevel3Phase2, 1500);
-            } else {
-                coins = Math.max(0, coins - 2);
-                updateStats();
-                showMessage('拼字錯誤！金幣 -2', false);
-                setTimeout(loadQuestion, 1500);
-            }
+    function checkLevel3Phase2() {
+        if(selectedWord === "") return showMessage('請選擇一個字！', false);
+        
+        // 檢查選出的字是否在「可接受的答案清單」內
+        if(currentQ.acceptables.includes(selectedWord)) {
+            coins += 3; progress += 1;
+            showMessage(`「${currentQ.char}${selectedWord}」！完美通關！金幣 +3`, true);
+            checkLevelUp();
         } else {
-            // Phase 2 組詞檢查
-            if(l3TempAnswers.length === 0) return showMessage('請選擇一個字！', false);
-            
-            const selectedChar = l3TempAnswers[0];
-            const correctOtherChar = currentQ.wordParts[0] === currentQ.char ? currentQ.wordParts[1] : currentQ.wordParts[0];
-            
-            if(selectedChar === correctOtherChar) {
-                coins += 3; // 連擊加成
-                progress += 1;
-                showMessage('完美通關！金幣 +3 (總計+5)', true);
-                checkLevelUp();
-            } else {
-                showMessage('組詞錯誤，不扣分。下次加油！', false);
-                setTimeout(() => { checkLevelUp(true); }, 2000); // 失敗但也進入下一題
-            }
+            showMessage('組詞錯誤，不扣分。下次加油！', false);
+            setTimeout(() => { progress+=1; checkLevelUp(true); }, 2000);
         }
     }
 
     // ========== 流程控制 ==========
     function checkAnswer() {
+        // 要求瀏覽器啟動音效權限 (解決瀏覽器阻擋自動播放聲音的問題)
+        if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+
         if(level === 1) checkLevel1();
-        else if(level === 2) checkLevel2();
-        else if(level === 3) checkLevel3();
+        else if(level === 2) checkBlueprints();
+        else if(level === 3) {
+            if(l3Phase === 1) checkBlueprints();
+            else checkLevel3Phase2();
+        }
     }
 
     function checkLevelUp(forceNext = false) {
         updateStats();
         if(progress >= 5) {
             if(level < 3) {
-                level++;
-                progress = 0;
-                qIndex = 0;
+                level++; progress = 0; qIndex = 0;
                 alert(`恭喜晉級到 ${['初級', '中級', '高級'][level-1]}！`);
                 loadQuestion();
             } else {
