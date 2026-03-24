@@ -109,9 +109,10 @@
             margin-top: 10px; padding: 12px 20px; font-size: 1.2rem;
             background: linear-gradient(145deg, #50a1f1, #3c82e6);
             color: white; border: none; border-radius: 20px; cursor: pointer; width: 100%; font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s;
         }
         .action-btn:active { background: linear-gradient(145deg, #3c82e6, #50a1f1); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+        .action-btn:disabled { background: #cccccc; cursor: not-allowed; box-shadow: none; color: #888;}
         
         .reset-btn {
             margin-top: 12px; padding: 8px 20px; font-size: 0.9rem; font-weight: bold;
@@ -283,7 +284,7 @@
     
     function stopTimer() { clearInterval(timerInterval); }
     
-    // 獨立出錯誤訊息與懲罰邏輯，確保紅字與音效一定會觸發
+    // ⭐ 修復的錯誤處理函式，明確加入 errorText 並觸發紅字與音效
     function handleWrongAnswer(penalty, errorText) {
         stopTimer();
         coins = Math.max(0, coins - penalty);
@@ -291,8 +292,16 @@
         qIdx++;
         updateStats();
         
+        // 鎖定確認按鈕避免學生連續點擊
+        document.getElementById('main-btn').disabled = true;
+        
         showMessage(errorText, false); // 觸發紅字與嘟嘟聲
-        setTimeout(loadQuestion, 1800); // 延長到 1.8秒，讓學生看清楚提示
+        
+        // 延長停留時間，讓學生看清楚紅字
+        setTimeout(() => {
+            document.getElementById('main-btn').disabled = false;
+            loadQuestion();
+        }, 1800); 
     }
 
     function handleTimeUp() { 
@@ -318,7 +327,7 @@
         msgEl.innerText = text; 
         msgEl.className = isSuccess ? 'correct-text' : 'wrong-text';
         playSound(isSuccess ? 'success' : 'error');
-        // 紅字顯示時間
+        // 紅字會停留，直到下一個動作將它清空
         setTimeout(() => { if (msgEl.innerText === text) msgEl.innerText = ''; }, 1700); 
     }
     
@@ -406,11 +415,13 @@
     
     function checkAnswer() {
         stopTimer(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        
         if (stage === 1) {
             if(l1Answers.length < 2) { startTimer(globalTimeLimit); return showMessage('請選滿兩個部件', false); }
             if(currentQ.parts.every(p => l1Answers.includes(p))) { 
                 coins += 1; progress += 1; showMessage(`正確, ${playerName}!`, true); 
-                qIdx++; setTimeout(checkLevelUp, 1500); 
+                document.getElementById('main-btn').disabled = true;
+                qIdx++; setTimeout(() => { document.getElementById('main-btn').disabled = false; checkLevelUp(); }, 1500); 
             } else {
                 handleWrongAnswer(0, "答錯囉！稍後再試 (Try again later)");
             }
@@ -424,12 +435,13 @@
             let isOrderCorrect = true; for(let i=0; i<currentQ.parts.length; i++) if(bpAnswers[filledBpIdx][i] !== currentQ.parts[i]) isOrderCorrect = false;
             
             if(isGridCorrect && isOrderCorrect) {
+                document.getElementById('main-btn').disabled = true;
                 if(stage === 2) { 
                     coins += 2; progress += 1; showMessage(`漂亮, ${playerName}!`, true); 
-                    qIdx++; setTimeout(checkLevelUp, 1500); 
+                    qIdx++; setTimeout(() => { document.getElementById('main-btn').disabled = false; checkLevelUp(); }, 1500); 
                 } else { 
                     coins += 2; updateStats(); showMessage('拼字正確！', true); 
-                    l3Phase = 2; setTimeout(renderStage3Phase2, 1000); 
+                    l3Phase = 2; setTimeout(() => { document.getElementById('main-btn').disabled = false; renderStage3Phase2(); }, 1000); 
                 }
             } else {
                 handleWrongAnswer(stage === 2 ? 1 : 2, "結構或位置錯了！扣除金幣");
@@ -442,7 +454,8 @@
                 document.getElementById('hint-english').innerText = currentQ.meanings[selectedWord].e;
                 document.getElementById('hint-box').classList.add('success-highlight');
                 showMessage(`完美通關!`, true); 
-                qIdx++; setTimeout(checkLevelUp, 2000); 
+                document.getElementById('main-btn').disabled = true;
+                qIdx++; setTimeout(() => { document.getElementById('main-btn').disabled = false; checkLevelUp(); }, 2000); 
             } else {
                 handleWrongAnswer(0, "組詞錯誤，不扣分。稍後再試！");
             }
