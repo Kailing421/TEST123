@@ -89,7 +89,8 @@
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 1rem; font-weight: bold; }
         .timer-track { width: 100%; height: 8px; background: #eee; border-radius: 4px; margin-bottom: 15px; overflow: hidden; display: none; }
         .timer-bar { height: 100%; width: 100%; background: var(--success); }
-        .hint-box { text-align: center; margin-bottom: 10px; padding: 8px; background: #E8F2FC; border-radius: 10px; }
+        .hint-box { text-align: center; margin-bottom: 10px; padding: 8px; background: #E8F2FC; border-radius: 10px; transition: 0.3s;}
+        .hint-box.success-highlight { background: #EAFaf1; transform: scale(1.02); box-shadow: 0 4px 8px rgba(126, 211, 33, 0.2); }
         .pinyin { font-size: 1.6rem; font-weight: bold; color: var(--primary); }
         .english { font-size: 1rem; color: #555; }
         .instruction-text { font-size: 0.9rem; color: #888; text-align: center; margin-bottom: 10px; font-weight: bold;}
@@ -112,7 +113,6 @@
         }
         .action-btn:active { background: linear-gradient(145deg, #3c82e6, #50a1f1); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
         
-        /* 重置按鈕樣式 */
         .reset-btn {
             margin-top: 12px; padding: 8px 20px; font-size: 0.9rem; font-weight: bold;
             background: #f0f0f0; color: #777; border: none; border-radius: 15px; 
@@ -152,7 +152,7 @@
         
         .l3-word-area { display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 10px 0; gap: 10px;}
         .word-slot { border-bottom: 3px solid var(--primary); min-width: 50px; text-align: center; color: var(--primary);}
-        #message { text-align: center; font-weight: bold; margin-top: 10px; min-height: 22px; font-size: 1rem;}
+        #message { text-align: center; font-weight: bold; margin-top: 10px; min-height: 22px; font-size: 1rem; transition: 0.2s;}
         .correct-text { color: var(--success); }
         .wrong-text { color: var(--danger); }
     </style>
@@ -255,8 +255,8 @@
         const nameInput = document.getElementById('player-name').value.trim();
         playerName = nameInput !== "" ? nameInput : "Player";
         if(selectedLevel === 1) globalTimeLimit = 0;
-        else if(selectedLevel === 2) globalTimeLimit = 10; // 更新為 10 秒
-        else if(selectedLevel === 3) globalTimeLimit = 8;  // 更新為 8 秒
+        else if(selectedLevel === 2) globalTimeLimit = 10;
+        else if(selectedLevel === 3) globalTimeLimit = 8;
         
         document.getElementById('start-screen').classList.remove('active');
         document.getElementById('game-screen').classList.add('active');
@@ -282,7 +282,22 @@
     }
     
     function stopTimer() { clearInterval(timerInterval); }
-    function handleTimeUp() { showMessage('時間到 Time\'s up!', false); handleWrongAnswer(stage === 2 ? 1 : (stage === 3 ? 2 : 0)); }
+    
+    // 獨立出錯誤訊息與懲罰邏輯，確保紅字與音效一定會觸發
+    function handleWrongAnswer(penalty, errorText) {
+        stopTimer();
+        coins = Math.max(0, coins - penalty);
+        currentLevelQs.push(currentQ); // 放回錯題本
+        qIdx++;
+        updateStats();
+        
+        showMessage(errorText, false); // 觸發紅字與嘟嘟聲
+        setTimeout(loadQuestion, 1800); // 延長到 1.8秒，讓學生看清楚提示
+    }
+
+    function handleTimeUp() { 
+        handleWrongAnswer(stage === 2 ? 1 : (stage === 3 ? 2 : 0), "時間到 Time's up! 稍後再試"); 
+    }
     
     function initStage(stg) {
         stage = stg; progress = 0; qIdx = 0;
@@ -300,14 +315,19 @@
     
     function showMessage(text, isSuccess) {
         const msgEl = document.getElementById('message');
-        msgEl.innerText = text; msgEl.className = isSuccess ? 'correct-text' : 'wrong-text';
+        msgEl.innerText = text; 
+        msgEl.className = isSuccess ? 'correct-text' : 'wrong-text';
         playSound(isSuccess ? 'success' : 'error');
-        setTimeout(() => msgEl.innerText = '', 1500);
+        // 紅字顯示時間
+        setTimeout(() => { if (msgEl.innerText === text) msgEl.innerText = ''; }, 1700); 
     }
     
     function loadQuestion() {
         stopTimer(); currentQ = currentLevelQs[qIdx];
         const ws = document.getElementById('workspace'); ws.innerHTML = '';
+        
+        const hintBox = document.getElementById('hint-box');
+        hintBox.classList.remove('success-highlight');
         document.getElementById('hint-pinyin').innerText = currentQ.p;
         document.getElementById('hint-english').innerText = currentQ.e;
         
@@ -335,7 +355,6 @@
             btn.onclick = () => { if(l1Answers.length < 2) { l1Answers.push(part); document.getElementById(`l1-s${l1Answers.length-1}`).innerText = part; btn.classList.add('used'); } }; poolDiv.appendChild(btn);
         }); ws.appendChild(poolDiv);
         
-        // 加入重置按鈕
         const resetBtn = document.createElement('button'); resetBtn.className = 'reset-btn'; resetBtn.innerText = '重置選擇 (Reset)';
         resetBtn.onclick = () => loadQuestion(); ws.appendChild(resetBtn);
     }
@@ -364,7 +383,6 @@
             btn.onclick = () => { document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); selectedPartBtn = { btn, part }; }; poolDiv.appendChild(btn);
         }); ws.appendChild(poolDiv);
         
-        // 加入重置按鈕
         const resetBtn = document.createElement('button'); resetBtn.className = 'reset-btn'; resetBtn.innerText = '重置選擇 (Reset)';
         resetBtn.onclick = () => loadQuestion(); ws.appendChild(resetBtn);
     }
@@ -380,45 +398,68 @@
             btn.onclick = () => { document.getElementById('target-slot').innerText = opt; selectedWord = opt; }; poolDiv.appendChild(btn);
         }); ws.appendChild(poolDiv);
         
-        // 針對組詞階段的重置按鈕 (重新整理第二階段即可)
         const resetBtn = document.createElement('button'); resetBtn.className = 'reset-btn'; resetBtn.innerText = '重置選擇 (Reset)';
         resetBtn.onclick = () => renderStage3Phase2(); ws.appendChild(resetBtn);
         
         startTimer(globalTimeLimit);
     }
     
-    function handleWrongAnswer(penalty) { stopTimer(); coins = Math.max(0, coins - penalty); currentLevelQs.push(currentQ); qIdx++; updateStats(); setTimeout(loadQuestion, 1500); }
-    
     function checkAnswer() {
         stopTimer(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         if (stage === 1) {
             if(l1Answers.length < 2) { startTimer(globalTimeLimit); return showMessage('請選滿兩個部件', false); }
-            if(currentQ.parts.every(p => l1Answers.includes(p))) { coins += 1; progress += 1; showMessage(`正確, ${playerName}!`, true); qIdx++; setTimeout(checkLevelUp, 1500); } else handleWrongAnswer(0);
+            if(currentQ.parts.every(p => l1Answers.includes(p))) { 
+                coins += 1; progress += 1; showMessage(`正確, ${playerName}!`, true); 
+                qIdx++; setTimeout(checkLevelUp, 1500); 
+            } else {
+                handleWrongAnswer(0, "答錯囉！稍後再試 (Try again later)");
+            }
         } else if (stage === 2 || (stage === 3 && l3Phase === 1)) {
             let filledBpIdx = -1; for(let i in bpAnswers) if(bpAnswers[i].length > 0) filledBpIdx = i;
-            if(filledBpIdx === -1 || bpAnswers[filledBpIdx].filter(Boolean).length < currentQ.parts.length) { startTimer(globalTimeLimit); return showMessage('請填滿藍圖', false); }
+            if(filledBpIdx === -1 || bpAnswers[filledBpIdx].filter(Boolean).length < currentQ.parts.length) { 
+                startTimer(globalTimeLimit); return showMessage('請填滿藍圖', false); 
+            }
             const activeWrapper = document.querySelectorAll('.blueprint-wrapper')[filledBpIdx];
             const isGridCorrect = activeWrapper.querySelector('.bp-grid').classList.contains(currentQ.grid);
             let isOrderCorrect = true; for(let i=0; i<currentQ.parts.length; i++) if(bpAnswers[filledBpIdx][i] !== currentQ.parts[i]) isOrderCorrect = false;
+            
             if(isGridCorrect && isOrderCorrect) {
-                if(stage === 2) { coins += 2; progress += 1; showMessage(`漂亮, ${playerName}!`, true); qIdx++; setTimeout(checkLevelUp, 1500); }
-                else { coins += 2; updateStats(); showMessage('拼字正確！', true); l3Phase = 2; setTimeout(renderStage3Phase2, 1000); }
-            } else handleWrongAnswer(stage === 2 ? 1 : 2);
+                if(stage === 2) { 
+                    coins += 2; progress += 1; showMessage(`漂亮, ${playerName}!`, true); 
+                    qIdx++; setTimeout(checkLevelUp, 1500); 
+                } else { 
+                    coins += 2; updateStats(); showMessage('拼字正確！', true); 
+                    l3Phase = 2; setTimeout(renderStage3Phase2, 1000); 
+                }
+            } else {
+                handleWrongAnswer(stage === 2 ? 1 : 2, "結構或位置錯了！扣除金幣");
+            }
         } else if (stage === 3 && l3Phase === 2) {
             if(selectedWord === "") { startTimer(globalTimeLimit); return showMessage('請選一個字', false); }
             if(currentQ.acceptables.includes(selectedWord)) {
                 coins += 3; progress += 1; 
-                document.getElementById('hint-pinyin').innerText = currentQ.meanings[selectedWord].p; document.getElementById('hint-english').innerText = currentQ.meanings[selectedWord].e;
-                showMessage(`完美通關!`, true); qIdx++; setTimeout(checkLevelUp, 2000); 
-            } else handleWrongAnswer(0);
+                document.getElementById('hint-pinyin').innerText = currentQ.meanings[selectedWord].p; 
+                document.getElementById('hint-english').innerText = currentQ.meanings[selectedWord].e;
+                document.getElementById('hint-box').classList.add('success-highlight');
+                showMessage(`完美通關!`, true); 
+                qIdx++; setTimeout(checkLevelUp, 2000); 
+            } else {
+                handleWrongAnswer(0, "組詞錯誤，不扣分。稍後再試！");
+            }
         }
     }
     
     function checkLevelUp() {
         updateStats();
         if(progress >= 5) {
-            if(stage < 3) { alert(`恭喜 ${playerName} 進入 ${['', '中級', '高級'][stage]}！`); initStage(stage + 1); }
-            else { alert(`太厲害了，${playerName}！完成所有挑戰，獲得 ${coins} 枚金幣！`); document.getElementById('game-screen').classList.remove('active'); document.getElementById('start-screen').classList.add('active'); }
+            if(stage < 3) { 
+                alert(`恭喜 ${playerName} 進入 ${['', '中級', '高級'][stage]}！`); 
+                initStage(stage + 1); 
+            } else { 
+                alert(`太厲害了，${playerName}！完成所有挑戰，獲得 ${coins} 枚金幣！`); 
+                document.getElementById('game-screen').classList.remove('active'); 
+                document.getElementById('start-screen').classList.add('active'); 
+            }
         } else loadQuestion();
     }
 </script>
