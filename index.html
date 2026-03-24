@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>漢字拼圖 Hanzi Puzzle</title>
+    <title>漢字拼圖 Hanzi Puzzle Master</title>
     <style>
         :root {
             --primary: #4A90E2;
@@ -20,69 +20,84 @@
             background: var(--bg-gradient); color: var(--text);
             margin: 0; padding: 10px; display: flex;
             justify-content: center; align-items: center; min-height: 100vh;
+            overflow: hidden; /* 防止首頁動畫溢出 */
         }
         
+        /* 核心容器 */
         .screen-container {
             width: 100%; max-width: 500px; background: var(--box-bg);
-            border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            display: none; animation: fadeIn 0.4s ease-out; position: relative; overflow: hidden;
+            border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none; animation: fadeIn 0.4s ease-out; position: relative; z-index: 10;
         }
         .screen-container.active { display: block; }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* --- 首頁拼圖裝飾 --- */
-        .puzzle-dec { position: absolute; opacity: 0.1; z-index: 0; }
-        .pd-1 { top: -20px; left: -20px; font-size: 100px; transform: rotate(15deg); color: #4A90E2; }
-        .pd-2 { bottom: 10px; right: -10px; font-size: 80px; transform: rotate(-20deg); color: #F5A623; }
+        /* --- 封面漂浮拼圖動畫 --- */
+        #start-screen { overflow: visible; } /* 讓裝飾可以超出邊框一點點 */
+        
+        .puzzle-bg-deco {
+            position: absolute; font-size: 5rem; opacity: 0.15; z-index: 0;
+            user-select: none; pointer-events: none;
+        }
+        
+        @keyframes float1 { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(15px, -15px) rotate(10deg); } }
+        @keyframes float2 { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(-20px, 10px) rotate(-15deg); } }
+        @keyframes float3 { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(10px, 20px) rotate(5deg); } }
+
+        .pd-1 { top: -30px; left: 10px; color: var(--primary); animation: float1 8s ease-in-out infinite; }
+        .pd-2 { bottom: 20px; right: 20px; color: var(--gold); animation: float2 10s ease-in-out infinite 1s; font-size: 4rem; }
+        .pd-3 { top: 40%; left: -25px; color: var(--success); animation: float3 9s ease-in-out infinite 2s; font-size: 3rem; }
         
         /* --- 首頁樣式 --- */
-        .start-screen { text-align: center; padding: 40px 20px; }
-        .game-title { font-size: 2.5rem; color: var(--primary); margin: 0 0 5px 0; position: relative; z-index: 1;}
-        .game-subtitle { font-size: 1.1rem; color: #666; margin-bottom: 30px; position: relative; z-index: 1;}
+        .start-screen { text-align: center; padding: 50px 20px; }
+        
+        @keyframes titleFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        .game-title {
+            font-size: 3rem; font-weight: 900; margin: 0 0 5px 0; position: relative; z-index: 1;
+            background: linear-gradient(to bottom, #4A90E2, #a1c4fd);
+            -webkit-background-clip: text; color: transparent;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            animation: titleFloat 4s ease-in-out infinite;
+        }
+        .game-subtitle { font-size: 1.2rem; color: #777; margin-bottom: 35px; position: relative; z-index: 1; font-weight: bold;}
         
         .name-input {
-            width: 85%; padding: 12px; font-size: 1.1rem; margin-bottom: 25px;
-            border: 2px solid #ddd; border-radius: 10px; text-align: center;
+            width: 85%; padding: 15px; font-size: 1.2rem; margin-bottom: 30px;
+            border: 3px solid #eee; border-radius: 12px; text-align: center;
             outline: none; transition: 0.3s; position: relative; z-index: 1;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
-        .name-input:focus { border-color: var(--primary); }
+        .name-input:focus { border-color: var(--primary); background: #fbfdff; }
         
-        .difficulty-container { display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 1;}
+        .difficulty-container { display: flex; flex-direction: column; gap: 12px; position: relative; z-index: 1;}
         .diff-btn {
-            padding: 12px; border: 2px solid var(--primary); border-radius: 15px;
-            background: white; color: var(--primary); font-size: 1.2rem; font-weight: bold;
+            padding: 15px; border: none; border-radius: 15px;
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            color: var(--primary); font-size: 1.3rem; font-weight: bold;
             cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 4px 4px 8px #d1d1d1, -4px -4px 8px #ffffff;
         }
-        .diff-btn:hover { background: #E8F2FC; transform: translateY(-2px); }
-        .diff-btn span { font-size: 0.9rem; color: #888; font-weight: normal; }
+        .diff-btn:hover {
+            transform: translateY(-3px);
+            background: linear-gradient(145deg, #f0f0f0, #ffffff);
+            box-shadow: 6px 6px 12px #d1d1d1, -6px -6px 12px #ffffff;
+        }
+        .diff-btn:active { transform: translateY(1px); box-shadow: inset 2px 2px 5px #d1d1d1, inset -2px -2px 5px #ffffff; }
+        .diff-btn span { font-size: 0.95rem; color: #888; font-weight: normal; margin-left: 10px;}
 
-        /* --- 遊戲頁面緊湊樣式 --- */
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px; font-size: 1rem; font-weight: bold;
-        }
-        
-        /* 計時器與進度條融合 */
-        .timer-track {
-            width: 100%; height: 8px; background: #eee; border-radius: 4px;
-            margin-bottom: 15px; overflow: hidden; display: none;
-        }
+        /* --- 遊戲頁面緊湊樣式 (保留不變) --- */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 1rem; font-weight: bold; }
+        .timer-track { width: 100%; height: 8px; background: #eee; border-radius: 4px; margin-bottom: 15px; overflow: hidden; display: none; }
         .timer-bar { height: 100%; width: 100%; background: var(--success); }
-
-        .hint-box {
-            text-align: center; margin-bottom: 10px; padding: 8px;
-            background: #E8F2FC; border-radius: 10px;
-        }
+        .hint-box { text-align: center; margin-bottom: 10px; padding: 8px; background: #E8F2FC; border-radius: 10px; }
         .pinyin { font-size: 1.6rem; font-weight: bold; color: var(--primary); }
         .english { font-size: 1rem; color: #555; }
         .instruction-text { font-size: 0.9rem; color: #888; text-align: center; margin-bottom: 10px; font-weight: bold;}
-        
         .workspace { min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center;}
-        
         .parts-pool { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 15px; }
         .part-btn {
             font-size: 1.6rem; padding: 8px 15px; background: white;
@@ -91,29 +106,25 @@
         }
         .part-btn.selected { border-color: var(--primary); background: #E8F2FC; transform: scale(1.1); }
         .part-btn.used { visibility: hidden; }
-        
         .action-btn {
             margin-top: 10px; padding: 12px 20px; font-size: 1.2rem;
-            background: var(--primary); color: white; border: none;
-            border-radius: 20px; cursor: pointer; width: 100%; font-weight: bold;
+            background: linear-gradient(145deg, #50a1f1, #3c82e6);
+            color: white; border: none; border-radius: 20px; cursor: pointer; width: 100%; font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-
+        .action-btn:active { background: linear-gradient(145deg, #3c82e6, #50a1f1); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
         .l1-slots { display: flex; gap: 10px; margin-bottom: 10px; }
         .l1-slot {
             width: 60px; height: 60px; border: 2px dashed #aaa;
             border-radius: 8px; display: flex; align-items: center;
             justify-content: center; font-size: 2rem; background: #fafafa;
         }
-
         .blueprints-container { display: flex; gap: 15px; justify-content: center; }
         .blueprint-wrapper { border: 2px solid #ddd; padding: 8px; border-radius: 8px; cursor: pointer; background: white; }
         .blueprint-wrapper.active-bp { border-color: var(--primary); background: #F8FBFF; }
-        
         .bp-grid { display: grid; gap: 3px; width: 90px; height: 90px; }
         .bp-slot { background: #f0f0f0; border: 1px dashed #999; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; cursor: pointer;}
         .bp-slot.active-slot { border: 2px solid var(--primary); background: #fff; }
-
-        /* 格線設定 */
         .grid-lr { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
         .grid-tb { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
         .grid-lmr { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr; }
@@ -129,10 +140,8 @@
         .grid-tlr-b .slot-0 { grid-column: 1; grid-row: 1; }
         .grid-tlr-b .slot-1 { grid-column: 2; grid-row: 1; }
         .grid-tlr-b .slot-2 { grid-column: 1 / 3; grid-row: 2; }
-
         .l3-word-area { display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 10px 0; gap: 10px;}
         .word-slot { border-bottom: 3px solid var(--primary); min-width: 50px; text-align: center; color: var(--primary);}
-
         #message { text-align: center; font-weight: bold; margin-top: 10px; min-height: 22px; font-size: 1rem;}
         .correct-text { color: var(--success); }
         .wrong-text { color: var(--danger); }
@@ -141,24 +150,25 @@
 <body>
 
 <div id="start-screen" class="screen-container active start-screen">
-    <div class="puzzle-dec pd-1">🧩</div>
-    <div class="puzzle-dec pd-2">🧩</div>
+    <div class="puzzle-bg-deco pd-1">🧩</div>
+    <div class="puzzle-bg-deco pd-2">🧩</div>
+    <div class="puzzle-bg-deco pd-3">🧩</div>
 
     <h1 class="game-title">漢字拼圖</h1>
     <div class="game-subtitle">Hanzi Puzzle Master</div>
     
     <input type="text" id="player-name" class="name-input" placeholder="輸入名字 Enter your name">
     
-    <div class="instruction-text">選擇難度 Select Level</div>
+    <div class="instruction-text" style="color:#555; margin-bottom:15px;">選擇難度 Select Difficulty (Time Limit)</div>
     <div class="difficulty-container">
         <button class="diff-btn" onclick="startGame(1)">
-            Level 1 <span>無限制 No Limit</span>
+            <div>Level 1</div> <span>無限制 No Limit</span>
         </button>
         <button class="diff-btn" onclick="startGame(2)">
-            Level 2 <span>8秒 8 Seconds</span>
+            <div>Level 2</div> <span>⏳ 8秒 8 Seconds</span>
         </button>
         <button class="diff-btn" onclick="startGame(3)">
-            Level 3 <span>5秒 5 Seconds</span>
+            <div>Level 3</div> <span>⚡ 5秒 5 Seconds</span>
         </button>
     </div>
 </div>
@@ -169,20 +179,15 @@
         <div>進度: <span id="progress-display">0/5</span></div>
         <div>💰 <span id="coins-display">0</span></div>
     </div>
-
     <div id="timer-track" class="timer-track"><div id="timer-bar" class="timer-bar"></div></div>
-
     <div class="hint-box" id="hint-box">
         <div class="pinyin" id="hint-pinyin">míng</div>
         <div class="english" id="hint-english">bright</div>
     </div>
-    
     <div id="instruction-text-game" class="instruction-text">💡 準備開始</div>
-
     <div id="workspace" class="workspace"></div>
-
     <div id="message"></div>
-    <button id="main-btn" class="action-btn" onclick="checkAnswer()">確認 Confirm</button>
+    <button id="main-btn" class="action-btn" onclick="checkAnswer()">確認答案 Confirm</button>
 </div>
 
 <script>
@@ -216,7 +221,7 @@
     ];
     const qStage2 = [
         { char: '陪', p: 'péi', e: 'to accompany', parts: ['阝','立','口'], grid: 'grid-l-tr-br', fakeGrid: 'grid-tl-bl-r' },
-        { char: '部', p: 'bù', e: 'part / section', parts: ['立','口','阝'], grid: 'grid-tl-bl-r', fakeGrid: 'grid-l-tr-br' },
+        { char: '部', p: 'bù', e: 'part', parts: ['立','口','阝'], grid: 'grid-tl-bl-r', fakeGrid: 'grid-l-tr-br' },
         { char: '謝', p: 'xiè', e: 'to thank', parts: ['言','身','寸'], grid: 'grid-lmr', fakeGrid: 'grid-tb' },
         { char: '做', p: 'zuò', e: 'to do', parts: ['亻','古','攵'], grid: 'grid-lmr', fakeGrid: 'grid-tlr-b' }, 
         { char: '想', p: 'xiǎng', e: 'to think', parts: ['木','目','心'], grid: 'grid-tlr-b', fakeGrid: 'grid-l-tr-br' }
@@ -230,51 +235,30 @@
     ];
 
     const gridSlotsConfig = { 'grid-lr': 2, 'grid-tb': 2, 'grid-lmr': 3, 'grid-l-tr-br': 3, 'grid-tl-bl-r': 3, 'grid-tlr-b': 3 };
-
-    // --- 遊戲全域狀態 ---
-    let playerName = "";
-    let globalTimeLimit = 0; 
-    let stage = 1; // 1: 初級, 2: 中級, 3: 高級
-    let coins = 0; let progress = 0;
+    let playerName = ""; let globalTimeLimit = 0; let stage = 1; let coins = 0; let progress = 0;
     let currentLevelQs = []; let qIdx = 0; let currentQ = null; let l3Phase = 1;
-    let selectedPartBtn = null; let l1Answers = []; let bpAnswers = {}; 
-    let timerInterval;
+    let selectedPartBtn = null; let l1Answers = []; let bpAnswers = {}; let timerInterval;
 
     function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
-
-    // 開始遊戲 (選擇難度)
     function startGame(selectedLevel) {
         const nameInput = document.getElementById('player-name').value.trim();
         playerName = nameInput !== "" ? nameInput : "Player";
-        
-        // 根據選擇的 Level 設定倒數秒數
         if(selectedLevel === 1) globalTimeLimit = 0;
         else if(selectedLevel === 2) globalTimeLimit = 8;
         else if(selectedLevel === 3) globalTimeLimit = 5;
-
         document.getElementById('start-screen').classList.remove('active');
         document.getElementById('game-screen').classList.add('active');
         if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        
-        coins = 0;
-        initStage(1); // 永遠從初級開始
+        coins = 0; initStage(1);
     }
-
     function startTimer(seconds) {
         clearInterval(timerInterval);
         const track = document.getElementById('timer-track');
         const bar = document.getElementById('timer-bar');
         if(seconds === 0) { track.style.display = 'none'; return; }
-
-        track.style.display = 'block';
-        bar.style.transition = 'none'; bar.style.width = '100%'; bar.style.backgroundColor = 'var(--success)';
+        track.style.display = 'block'; bar.style.transition = 'none'; bar.style.width = '100%'; bar.style.backgroundColor = 'var(--success)';
         void bar.offsetWidth;
-
-        setTimeout(() => {
-            bar.style.transition = `width ${seconds}s linear, background-color 0.5s`;
-            bar.style.width = '0%';
-        }, 50);
-
+        setTimeout(() => { bar.style.transition = `width ${seconds}s linear, background-color 0.5s`; bar.style.width = '0%'; }, 50);
         let remaining = seconds;
         timerInterval = setInterval(() => {
             remaining--;
@@ -284,12 +268,7 @@
         }, 1000);
     }
     function stopTimer() { clearInterval(timerInterval); }
-
-    function handleTimeUp() {
-        showMessage('時間到 Time\'s up!', false);
-        handleWrongAnswer(stage === 2 ? 1 : (stage === 3 ? 2 : 0));
-    }
-
+    function handleTimeUp() { showMessage('時間到 Time\'s up!', false); handleWrongAnswer(stage === 2 ? 1 : (stage === 3 ? 2 : 0)); }
     function initStage(stg) {
         stage = stg; progress = 0; qIdx = 0;
         if(stage === 1) currentLevelQs = shuffle([...qStage1]);
@@ -297,28 +276,22 @@
         if(stage === 3) currentLevelQs = shuffle([...qStage3]);
         updateStats(); loadQuestion();
     }
-
     function updateStats() {
         document.getElementById('stage-display').innerText = ['初級', '中級', '高級'][stage-1];
         document.getElementById('progress-display').innerText = `${progress}/5`;
         document.getElementById('coins-display').innerText = coins;
     }
-
     function showMessage(text, isSuccess) {
         const msgEl = document.getElementById('message');
         msgEl.innerText = text; msgEl.className = isSuccess ? 'correct-text' : 'wrong-text';
         playSound(isSuccess ? 'success' : 'error');
         setTimeout(() => msgEl.innerText = '', 1500);
     }
-
     function loadQuestion() {
-        stopTimer();
-        currentQ = currentLevelQs[qIdx];
+        stopTimer(); currentQ = currentLevelQs[qIdx];
         const ws = document.getElementById('workspace'); ws.innerHTML = '';
-        
         document.getElementById('hint-pinyin').innerText = currentQ.p;
         document.getElementById('hint-english').innerText = currentQ.e;
-
         if (stage === 1) {
             document.getElementById('instruction-text-game').innerText = '💡 點選兩個部件 (Click 2 parts)';
             renderStage1(ws, shuffle([...currentQ.parts, ...currentQ.fake]));
@@ -326,36 +299,26 @@
             document.getElementById('instruction-text-game').innerText = '💡 將部件放入藍圖 (Click part, then slot)';
             renderBlueprints(ws, shuffle([...currentQ.parts]));
         } else if (stage === 3) {
-            l3Phase = 1;
-            document.getElementById('instruction-text-game').innerText = '💡 步驟一：拼字 (Step 1: Spell)';
+            l3Phase = 1; document.getElementById('instruction-text-game').innerText = '💡 步驟一：拼字 (Step 1: Spell)';
             renderBlueprints(ws, shuffle([...currentQ.parts, ...currentQ.fakeParts]));
         }
         startTimer(globalTimeLimit);
     }
-
-    // ========== 渲染區塊 ==========
     function renderStage1(ws, pool) {
         l1Answers = [];
         const slotsDiv = document.createElement('div'); slotsDiv.className = 'l1-slots';
         slotsDiv.innerHTML = `<div class="l1-slot" id="l1-s0"></div><div class="l1-slot" id="l1-s1"></div>`;
         ws.appendChild(slotsDiv);
-
         const poolDiv = document.createElement('div'); poolDiv.className = 'parts-pool';
         pool.forEach(part => {
             const btn = document.createElement('button'); btn.className = 'part-btn'; btn.innerText = part;
-            btn.onclick = () => {
-                if(l1Answers.length < 2) {
-                    l1Answers.push(part); document.getElementById(`l1-s${l1Answers.length-1}`).innerText = part; btn.classList.add('used');
-                }
-            }; poolDiv.appendChild(btn);
+            btn.onclick = () => { if(l1Answers.length < 2) { l1Answers.push(part); document.getElementById(`l1-s${l1Answers.length-1}`).innerText = part; btn.classList.add('used'); } }; poolDiv.appendChild(btn);
         }); ws.appendChild(poolDiv);
     }
-
     function renderBlueprints(ws, pool) {
         bpAnswers = {}; selectedPartBtn = null;
         const bpsDiv = document.createElement('div'); bpsDiv.className = 'blueprints-container';
         let grids = shuffle([currentQ.grid, currentQ.fakeGrid]);
-        
         grids.forEach((gridClass, bpIdx) => {
             bpAnswers[bpIdx] = [];
             const bpWrap = document.createElement('div'); bpWrap.className = 'blueprint-wrapper';
@@ -366,98 +329,60 @@
                     if (!selectedPartBtn) return;
                     bpAnswers[bpIdx][i] = selectedPartBtn.part; slot.innerText = selectedPartBtn.part;
                     selectedPartBtn.btn.classList.add('used'); selectedPartBtn.btn.classList.remove('selected'); selectedPartBtn = null;
-                    document.querySelectorAll('.blueprint-wrapper').forEach(w => w.classList.remove('active-bp'));
-                    slot.closest('.blueprint-wrapper').classList.add('active-bp');
+                    document.querySelectorAll('.blueprint-wrapper').forEach(w => w.classList.remove('active-bp')); slot.closest('.blueprint-wrapper').classList.add('active-bp');
                 }; gridDiv.appendChild(slot);
             } bpWrap.appendChild(gridDiv); bpsDiv.appendChild(bpWrap);
         }); ws.appendChild(bpsDiv);
-
         const poolDiv = document.createElement('div'); poolDiv.className = 'parts-pool';
         pool.forEach(part => {
             const btn = document.createElement('button'); btn.className = 'part-btn'; btn.innerText = part;
-            btn.onclick = () => {
-                document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected'); selectedPartBtn = { btn, part };
-            }; poolDiv.appendChild(btn);
+            btn.onclick = () => { document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); selectedPartBtn = { btn, part }; }; poolDiv.appendChild(btn);
         }); ws.appendChild(poolDiv);
     }
-
     function renderStage3Phase2() {
         const ws = document.getElementById('workspace'); ws.innerHTML = ''; selectedWord = "";
         document.getElementById('instruction-text-game').innerText = '💡 步驟二：組詞 (Step 2: Word)';
-        
         const wordArea = document.createElement('div'); wordArea.className = 'l3-word-area';
         wordArea.innerHTML = `<span>${currentQ.char}</span><div class="word-slot" id="target-slot">?</div>`; ws.appendChild(wordArea);
-
         const poolDiv = document.createElement('div'); poolDiv.className = 'parts-pool';
         shuffle([...currentQ.options]).forEach(opt => {
             const btn = document.createElement('button'); btn.className = 'part-btn'; btn.innerText = opt;
-            btn.onclick = () => { document.getElementById('target-slot').innerText = opt; selectedWord = opt; };
-            poolDiv.appendChild(btn);
+            btn.onclick = () => { document.getElementById('target-slot').innerText = opt; selectedWord = opt; }; poolDiv.appendChild(btn);
         }); ws.appendChild(poolDiv);
-        
-        startTimer(globalTimeLimit); // 組詞階段重新給予完整時間
+        startTimer(globalTimeLimit);
     }
-
-    // ========== 邏輯判斷 ==========
-    function handleWrongAnswer(penalty) {
-        stopTimer(); coins = Math.max(0, coins - penalty);
-        currentLevelQs.push(currentQ); qIdx++; updateStats();
-        setTimeout(loadQuestion, 1500);
-    }
-
+    function handleWrongAnswer(penalty) { stopTimer(); coins = Math.max(0, coins - penalty); currentLevelQs.push(currentQ); qIdx++; updateStats(); setTimeout(loadQuestion, 1500); }
     function checkAnswer() {
-        stopTimer();
-        if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        
+        stopTimer(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         if (stage === 1) {
             if(l1Answers.length < 2) { startTimer(globalTimeLimit); return showMessage('請選滿兩個部件', false); }
-            if(currentQ.parts.every(p => l1Answers.includes(p))) {
-                coins += 1; progress += 1; showMessage(`正確, ${playerName}!`, true);
-                qIdx++; setTimeout(checkLevelUp, 1500);
-            } else handleWrongAnswer(0);
-        } 
-        else if (stage === 2 || (stage === 3 && l3Phase === 1)) {
-            let filledBpIdx = -1;
-            for(let i in bpAnswers) if(bpAnswers[i].length > 0) filledBpIdx = i;
-            if(filledBpIdx === -1 || bpAnswers[filledBpIdx].filter(Boolean).length < currentQ.parts.length) {
-                startTimer(globalTimeLimit); return showMessage('請填滿藍圖', false);
-            }
+            if(currentQ.parts.every(p => l1Answers.includes(p))) { coins += 1; progress += 1; showMessage(`正確, ${playerName}!`, true); qIdx++; setTimeout(checkLevelUp, 1500); } else handleWrongAnswer(0);
+        } else if (stage === 2 || (stage === 3 && l3Phase === 1)) {
+            let filledBpIdx = -1; for(let i in bpAnswers) if(bpAnswers[i].length > 0) filledBpIdx = i;
+            if(filledBpIdx === -1 || bpAnswers[filledBpIdx].filter(Boolean).length < currentQ.parts.length) { startTimer(globalTimeLimit); return showMessage('請填滿藍圖', false); }
             const activeWrapper = document.querySelectorAll('.blueprint-wrapper')[filledBpIdx];
             const isGridCorrect = activeWrapper.querySelector('.bp-grid').classList.contains(currentQ.grid);
-            let isOrderCorrect = true;
-            for(let i=0; i<currentQ.parts.length; i++) if(bpAnswers[filledBpIdx][i] !== currentQ.parts[i]) isOrderCorrect = false;
-
+            let isOrderCorrect = true; for(let i=0; i<currentQ.parts.length; i++) if(bpAnswers[filledBpIdx][i] !== currentQ.parts[i]) isOrderCorrect = false;
             if(isGridCorrect && isOrderCorrect) {
                 if(stage === 2) { coins += 2; progress += 1; showMessage(`漂亮, ${playerName}!`, true); qIdx++; setTimeout(checkLevelUp, 1500); }
                 else { coins += 2; updateStats(); showMessage('拼字正確！', true); l3Phase = 2; setTimeout(renderStage3Phase2, 1000); }
             } else handleWrongAnswer(stage === 2 ? 1 : 2);
-        } 
-        else if (stage === 3 && l3Phase === 2) {
+        } else if (stage === 3 && l3Phase === 2) {
             if(selectedWord === "") { startTimer(globalTimeLimit); return showMessage('請選一個字', false); }
             if(currentQ.acceptables.includes(selectedWord)) {
                 coins += 3; progress += 1; 
-                document.getElementById('hint-pinyin').innerText = currentQ.meanings[selectedWord].p;
-                document.getElementById('hint-english').innerText = currentQ.meanings[selectedWord].e;
+                document.getElementById('hint-pinyin').innerText = currentQ.meanings[selectedWord].p; document.getElementById('hint-english').innerText = currentQ.meanings[selectedWord].e;
                 showMessage(`完美通關!`, true); qIdx++; setTimeout(checkLevelUp, 2000); 
             } else handleWrongAnswer(0);
         }
     }
-
     function checkLevelUp() {
         updateStats();
         if(progress >= 5) {
-            if(stage < 3) {
-                alert(`恭喜 ${playerName} 進入 ${['', '中級', '高級'][stage]}！`);
-                initStage(stage + 1);
-            } else {
-                alert(`太厲害了，${playerName}！完成所有挑戰，獲得 ${coins} 枚金幣！`);
-                document.getElementById('game-screen').classList.remove('active');
-                document.getElementById('start-screen').classList.add('active');
-            }
+            if(stage < 3) { alert(`恭喜 ${playerName} 進入 ${['', '中級', '高級'][stage]}！`); initStage(stage + 1); }
+            else { alert(`太厲害了，${playerName}！完成所有挑戰，獲得 ${coins} 枚金幣！`); document.getElementById('game-screen').classList.remove('active'); document.getElementById('start-screen').classList.add('active'); }
         } else loadQuestion();
     }
 </script>
-
 </body>
 </html>
