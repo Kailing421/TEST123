@@ -47,9 +47,15 @@
             padding: 15px;
             background: #E8F2FC;
             border-radius: 10px;
+            transition: all 0.3s ease;
         }
-        .pinyin { font-size: 1.8rem; font-weight: bold; color: var(--primary); }
-        .english { font-size: 1.1rem; color: #555; margin-top: 5px; }
+        .hint-box.success-highlight {
+            background: #EAFaf1;
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(126, 211, 33, 0.2);
+        }
+        .pinyin { font-size: 1.8rem; font-weight: bold; color: var(--primary); transition: 0.3s;}
+        .english { font-size: 1.1rem; color: #555; margin-top: 5px; transition: 0.3s;}
         .instruction-text { font-size: 0.95rem; color: #888; text-align: center; margin-bottom: 15px; font-weight: bold;}
         
         .workspace { min-height: 220px; display: flex; flex-direction: column; align-items: center; }
@@ -154,23 +160,21 @@
         
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        osc.connect(gain); gain.connect(audioCtx.destination);
         
         if (type === 'success') {
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(523.25, now); // 叮
-            osc.frequency.setValueAtTime(659.25, now + 0.1); // 咚
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.setValueAtTime(659.25, now + 0.1);
             gain.gain.setValueAtTime(0.5, now);
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
             osc.start(now); osc.stop(now + 0.3);
         } else {
-            // 答錯：兩聲低音嘟嘟
             osc.type = 'square';
             osc.frequency.setValueAtTime(200, now);
             gain.gain.setValueAtTime(0.3, now);
-            gain.gain.setValueAtTime(0.01, now + 0.15); // 斷開
-            gain.gain.setValueAtTime(0.3, now + 0.2); // 第二聲
+            gain.gain.setValueAtTime(0.01, now + 0.15);
+            gain.gain.setValueAtTime(0.3, now + 0.2);
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
             osc.start(now); osc.stop(now + 0.4);
         }
@@ -197,62 +201,67 @@
         { 
             char: '藥', p: 'yào', e: 'medicine', 
             parts: ['艹','樂'], grid: 'grid-tb', fakeGrid: 'grid-lr', fakeParts: ['木'],
-            acceptables: ['水', '局'], options: ['水','局','吃','天'] 
+            acceptables: ['水', '局'], options: ['水','局','吃','天'],
+            meanings: {
+                '水': { p: 'yàoshuǐ', e: 'liquid medicine' },
+                '局': { p: 'yàojú', e: 'pharmacy' }
+            }
         },
         { 
             char: '語', p: 'yǔ', e: 'language', 
             parts: ['言','吾'], grid: 'grid-lr', fakeGrid: 'grid-tb', fakeParts: ['彳'],
-            acceptables: ['言', '文'], options: ['言','文','看','見'] 
+            acceptables: ['言', '文'], options: ['言','文','看','見'],
+            meanings: {
+                '言': { p: 'yǔyán', e: 'language' },
+                '文': { p: 'yǔwén', e: 'language and literature' }
+            }
         },
         { 
             char: '電', p: 'diàn', e: 'electricity', 
             parts: ['雨','申'], grid: 'grid-tb', fakeGrid: 'grid-lr', fakeParts: ['日'],
-            acceptables: ['腦', '視'], options: ['腦','視','水','火'] 
+            acceptables: ['腦', '視'], options: ['腦','視','水','火'],
+            meanings: {
+                '腦': { p: 'diànnǎo', e: 'computer' },
+                '視': { p: 'diànshì', e: 'television' }
+            }
         },
         { 
             char: '影', p: 'yǐng', e: 'shadow / movie', 
             parts: ['景','彡'], grid: 'grid-lr', fakeGrid: 'grid-tb', fakeParts: ['日'],
-            acceptables: ['片', '子'], options: ['片','子','看','光'] 
+            acceptables: ['片', '子'], options: ['片','子','看','光'],
+            meanings: {
+                '片': { p: 'yǐngpiàn', e: 'movie / video' },
+                '子': { p: 'yǐngzi', e: 'shadow' }
+            }
         },
         { 
             char: '飯', p: 'fàn', e: 'rice / meal', 
             parts: ['飠','反'], grid: 'grid-lr', fakeGrid: 'grid-tb', fakeParts: ['口'],
-            acceptables: ['店', '菜'], options: ['店','菜','水','包'] 
+            acceptables: ['店', '菜'], options: ['店','菜','水','包'],
+            meanings: {
+                '店': { p: 'fàndiàn', e: 'restaurant / hotel' },
+                '菜': { p: 'fàncài', e: 'food / meal' }
+            }
         }
     ];
 
     const gridSlotsConfig = { 'grid-lr': 2, 'grid-tb': 2, 'grid-lmr': 3, 'grid-l-tr-br': 3, 'grid-tl-bl-r': 3, 'grid-tlr-b': 3 };
 
     // --- 遊戲狀態 ---
-    let level = 1;
-    let coins = 0;
-    let progress = 0;
-    
-    let currentLevelQs = []; // 動態錯題本隊列
-    let qIdx = 0;
-    let currentQ = null;
-    let l3Phase = 1;
-
-    let selectedPartBtn = null; 
-    let l1Answers = [];
-    let bpAnswers = {}; 
+    let level = 1; let coins = 0; let progress = 0;
+    let currentLevelQs = []; let qIdx = 0; let currentQ = null; let l3Phase = 1;
+    let selectedPartBtn = null; let l1Answers = []; let bpAnswers = {}; 
 
     function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
 
-    function initGame() {
-        coins = 0;
-        initLevel(1);
-    }
+    function initGame() { coins = 0; initLevel(1); }
 
     function initLevel(lvl) {
-        level = lvl;
-        progress = 0;
-        qIdx = 0;
+        level = lvl; progress = 0; qIdx = 0;
         if(level === 1) currentLevelQs = shuffle([...qLevel1]);
         if(level === 2) currentLevelQs = shuffle([...qLevel2]);
         if(level === 3) currentLevelQs = shuffle([...qLevel3]);
-        updateStats();
-        loadQuestion();
+        updateStats(); loadQuestion();
     }
 
     function updateStats() {
@@ -271,11 +280,13 @@
 
     function loadQuestion() {
         currentQ = currentLevelQs[qIdx];
-        const ws = document.getElementById('workspace');
-        ws.innerHTML = '';
+        const ws = document.getElementById('workspace'); ws.innerHTML = '';
         document.getElementById('main-btn').style.display = 'block';
         document.getElementById('main-btn').innerText = '確認答案';
-
+        
+        // 恢復提示區的預設樣式
+        const hintBox = document.getElementById('hint-box');
+        hintBox.classList.remove('success-highlight');
         document.getElementById('hint-pinyin').innerText = currentQ.p;
         document.getElementById('hint-english').innerText = currentQ.e;
 
@@ -295,16 +306,13 @@
     // ========== 初級 ==========
     function renderLevel1(ws, pool) {
         l1Answers = [];
-        const slotsDiv = document.createElement('div');
-        slotsDiv.className = 'l1-slots';
+        const slotsDiv = document.createElement('div'); slotsDiv.className = 'l1-slots';
         slotsDiv.innerHTML = `<div class="l1-slot" id="l1-s0"></div><div class="l1-slot" id="l1-s1"></div>`;
         ws.appendChild(slotsDiv);
 
-        const poolDiv = document.createElement('div');
-        poolDiv.className = 'parts-pool';
+        const poolDiv = document.createElement('div'); poolDiv.className = 'parts-pool';
         pool.forEach(part => {
-            const btn = document.createElement('button');
-            btn.className = 'part-btn'; btn.innerText = part;
+            const btn = document.createElement('button'); btn.className = 'part-btn'; btn.innerText = part;
             btn.onclick = () => {
                 if(l1Answers.length < 2) {
                     l1Answers.push(part);
@@ -326,7 +334,6 @@
     function renderBlueprints(ws, pool) {
         bpAnswers = {}; selectedPartBtn = null;
         const bpsDiv = document.createElement('div'); bpsDiv.className = 'blueprints-container';
-        
         let grids = shuffle([currentQ.grid, currentQ.fakeGrid]);
         
         grids.forEach((gridClass, bpIdx) => {
@@ -375,7 +382,6 @@
     function renderLevel3Phase2() {
         const ws = document.getElementById('workspace'); ws.innerHTML = '';
         selectedWord = "";
-        
         document.getElementById('instruction-text').innerText = '💡 第二步：選擇正確的字組成詞語 (Step 2: Form a word)';
         
         const wordArea = document.createElement('div'); wordArea.className = 'l3-word-area';
@@ -398,14 +404,13 @@
     // ========== 檢查與換題邏輯 ==========
     function handleWrongAnswer(penalty) {
         coins = Math.max(0, coins - penalty);
-        currentLevelQs.push(currentQ); // 將錯題塞入隊列最尾端 (複習機制)
-        qIdx++; // 直接換下一題
-        updateStats();
+        currentLevelQs.push(currentQ);
+        qIdx++; updateStats();
         setTimeout(loadQuestion, 2000);
     }
 
     function checkAnswer() {
-        if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); // 啟動音效權限
+        if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
         if (level === 1) {
             if(l1Answers.length < 2) return showMessage('請選滿兩個部件！', false);
@@ -437,7 +442,7 @@
                     coins += 2; progress += 1; showMessage('結構完全正確！金幣 +2', true);
                     qIdx++; setTimeout(checkLevelUp, 1500);
                 } else {
-                    coins += 2; updateStats(); showMessage('拼字正確！獲得 2 金幣。進入組詞...', true);
+                    coins += 2; updateStats(); showMessage('拼字正確！進入組詞...', true);
                     l3Phase = 2; setTimeout(renderLevel3Phase2, 1500);
                 }
             } else {
@@ -449,8 +454,18 @@
             if(selectedWord === "") return showMessage('請選擇一個字！', false);
             
             if(currentQ.acceptables.includes(selectedWord)) {
-                coins += 3; progress += 1; showMessage(`「${currentQ.char}${selectedWord}」！完美通關！金幣 +3`, true);
-                qIdx++; setTimeout(checkLevelUp, 1500);
+                coins += 3; progress += 1; 
+                
+                // 動態更新上方的提示區為完整的詞彙與英文
+                const wordInfo = currentQ.meanings[selectedWord];
+                document.getElementById('hint-pinyin').innerText = wordInfo.p;
+                document.getElementById('hint-english').innerText = wordInfo.e;
+                document.getElementById('hint-box').classList.add('success-highlight');
+                
+                showMessage(`答對了！金幣 +3`, true);
+                qIdx++; 
+                // 延長換題時間至 2.5 秒，讓學生看清楚英文
+                setTimeout(checkLevelUp, 2500); 
             } else {
                 showMessage('組詞錯誤，不扣分。換下一題！', false);
                 handleWrongAnswer(0);
